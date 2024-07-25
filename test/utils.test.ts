@@ -5,7 +5,8 @@ const encoded_data = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
 
 describe('encoding',()=>{
     test("encode",()=>{
-        const encoded_string = base64_url_encode(dummy_data);
+        const encoded_string = base64_url_encode(JSON.stringify(dummy_data));
+        console.log(encoded_string)
         expect(true).toBe(true)
     })
 })
@@ -14,7 +15,7 @@ describe('encoding',()=>{
 describe('decoding',()=>{
     test("decode",()=>{
         const raw_obj = base64_url_decode(encoded_data);
-        expect(JSON.parse(raw_obj.toString())).toStrictEqual(dummy_data)
+        expect(JSON.parse(new TextDecoder().decode(raw_obj))).toStrictEqual(dummy_data)
     })
 })
 

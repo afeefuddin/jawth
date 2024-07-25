@@ -1,35 +1,48 @@
-import * as crypto from "crypto"
-import { base64_url_decode, base64_url_encode } from "./utils";
+import { base64_url_decode } from "./utils";
 
-export default function decode_jwt(secret:string,jwt:string): {
-    id: string,
-    payload: object,
-    expires_at: Date
-}{
-    //decodes jwt
-    const jwtSplitted = jwt.split('.')
-    if(jwtSplitted.length !== 3){
-        throw new Error("Invalid Json web token")
-    }
-    const header = jwtSplitted[0];
-    const payload = jwtSplitted[1];
+export async function decode_jwt(secret: string, jwt: string): Promise<{
+  id: string,
+  payload: object,
+  expires_at: Date | undefined
+}> {
+  // Decodes jwt
+  const jwtSplitted = jwt.split('.');
+  if (jwtSplitted.length !== 3) {
+    throw new Error("Invalid JSON Web Token");
+  }
+  const [header, payload, signaturePart] = jwtSplitted;
 
-    const parsed_payload = JSON.parse(base64_url_decode(payload).toString());
-    const parsed_signature = base64_url_decode(jwtSplitted[2]);
+  const parsed_payload = JSON.parse(new TextDecoder().decode(base64_url_decode(payload)));
+  const parsed_signature = base64_url_decode(signaturePart);
 
-    const expected_signature = crypto.createHmac('sha256',secret).update(`${header}.${payload}`).digest("base64url");
-    
-    if(!crypto.timingSafeEqual(base64_url_decode(expected_signature),parsed_signature)){
-        throw new Error("Invalid Signature")
-    }
-    if(parsed_payload.exp && Date.now() >= parsed_payload.exp *1000){
-        throw new Error("JWT Expired")
-    }
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
 
-    return {
-        id: parsed_payload.sub,
-        payload: parsed_payload,
-        expires_at: parsed_payload.exp
-    }
+  const data = encoder.encode(`${header}.${payload}`);
+  const isValid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    parsed_signature,
+    data
+  );
 
+  if (!isValid) {
+    throw new Error("Invalid Signature");
+  }
+
+  if (parsed_payload.exp && Date.now() >= parsed_payload.exp * 1000) {
+    throw new Error("JWT Expired");
+  }
+
+  return {
+    id: parsed_payload.sub,
+    payload: parsed_payload,
+    expires_at: parsed_payload.exp ? new Date(parsed_payload.exp * 1000) : undefined
+  };
 }
