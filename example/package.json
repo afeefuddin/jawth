@@ -12,11 +12,12 @@
     "@prisma/client": "^5.17.0",
     "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
-    "jawthh": "^5.0.0",
+    "jawth": "^1.0.1",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
-    "sonner": "^1.5.0"
+    "sonner": "^1.5.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
